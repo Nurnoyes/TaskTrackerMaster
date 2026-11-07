@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StatusUpdateRequest extends FormRequest
 {
@@ -27,6 +28,9 @@ class StatusUpdateRequest extends FormRequest
             'description' => 'max:255|string|nullable',
             'color' => 'nullable',
             'group_id' => 'integer|exists:groups,id',
+            'category' => ['sometimes', Rule::in(['work', 'waiting', 'done'])],
+            'sla_minutes' => ['sometimes', 'integer', 'min:1', 'max:525600'],
+            'position' => ['sometimes', 'integer', 'min:0', 'max:10000'],
         ];
     }
 }

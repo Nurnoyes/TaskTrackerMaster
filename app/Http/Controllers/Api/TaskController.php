@@ -8,13 +8,20 @@ use App\Http\Requests\TaskUpdateRequest;
 use App\Models\Status;
 use App\Models\Task;
 use App\Models\User;
+use App\Models\Group;
+use App\Services\GroupAccess;
+use App\Services\TaskWorkflowService;
 use Illuminate\Http\Request;
 
 class TaskController extends Controller
 {
+    public function __construct(private readonly TaskWorkflowService $workflow) {}
+
     public function index($groupId)
     {
-        return Task::all()->where('group_id', $groupId);
+        $this->workflow->markExpired((int) $groupId);
+
+        return Task::all()->where('group_id', $groupId)->values()->load(['status', 'manager:id,name']);
     }
 
     public function show($groupId, $taskId) {
@@ -23,7 +30,9 @@ class TaskController extends Controller
         if (!$task) {
             return response(['message' => 'task not found'], 404);
         }
-        return $task;
+        $this->workflow->markExpired($task->group_id);
+
+        return $task->refresh()->load(['status', 'manager:id,name']);
     }
 
     public function destroy($taskId) {
@@ -38,16 +47,18 @@ class TaskController extends Controller
     public function store(TaskStoreRequest $request)
     {
         $validatedData = $request->validated();
-        $task = Task::create($validatedData);
-        return $task;
+        $group = Group::findOrFail($validatedData['group_id']);
+
+        return $this->workflow->create($group, $validatedData);
     }
 
-    public function update(TaskUpdateRequest $request, $taskId)
+    public function update(TaskUpdateRequest $request, $groupId, $taskId)
     {
         $validatedData = $request->validated();
         $task = Task::findOrFail($taskId);
-        $task->update($validatedData);
-        return $task;
+        $group = Group::findOrFail($task->group_id);
+
+        return $this->workflow->update($group, $taskId, $validatedData);
     }
 
     public function showUserTasks($userId)
@@ -58,5 +69,13 @@ class TaskController extends Controller
     public function showStatusTasks($statusId)
     {
         return Status::with('tasks')->find($statusId);
+    }
+
+    public function history(Request $request, GroupAccess $access, $groupId, $taskId)
+    {
+        $group = $access->find($request, $groupId);
+        $this->workflow->markExpired($group->id);
+
+        return $group->tasks()->findOrFail($taskId)->history()->get();
     }
 }
