@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StatusStoreRequest extends FormRequest
 {
@@ -26,7 +27,10 @@ class StatusStoreRequest extends FormRequest
             'name' => 'required|max:100',
             'description' => 'max:255|string|nullable',
             'color' => 'required',
-            'group_id' => 'required|exists:groups,id'
+            'group_id' => 'required|exists:groups,id',
+            'category' => ['sometimes', Rule::in(['work', 'waiting', 'done'])],
+            'sla_minutes' => ['sometimes', 'integer', 'min:1', 'max:525600'],
+            'position' => ['sometimes', 'integer', 'min:0', 'max:10000'],
         ];
     }
 }

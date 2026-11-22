@@ -15,6 +15,7 @@ Route::delete('/groups/{groupId}/tasks/{taskId}', [\App\Http\Controllers\Api\Tas
 Route::get('/groups/{groupId}/users/{userId}/tasks', [\App\Http\Controllers\Api\TaskController::class, 'showUserTasks'])->middleware('auth:sanctum');
 Route::post('/groups/{groupId}/task', [\App\Http\Controllers\Api\TaskController::class, 'store'])->middleware('auth:sanctum');
 Route::get('/groups/{groupId}/statuses/{statusId}/tasks', [\App\Http\Controllers\Api\TaskController::class, 'showStatusTasks'])->middleware('auth:sanctum');
+Route::get('/groups/{groupId}/tasks/{taskId}/history', [\App\Http\Controllers\Api\TaskController::class, 'history'])->whereNumber(['groupId', 'taskId'])->middleware('auth:sanctum');
 
 // status routes
 Route::post('/groups/{groupId}/status', [\App\Http\Controllers\Api\StatusController::class, 'store'])->middleware('auth:sanctum');
@@ -29,6 +30,8 @@ Route::get('/groups/{groupId}', [\App\Http\Controllers\Api\GroupController::clas
 Route::put('/groups/{groupId}', [\App\Http\Controllers\Api\GroupController::class, 'update'])->middleware('auth:sanctum');
 Route::delete('/groups/{groupId}', [\App\Http\Controllers\Api\GroupController::class, 'destroy'])->middleware('auth:sanctum');
 Route::get('/groups', [\App\Http\Controllers\Api\GroupController::class, 'index'])->middleware('auth:sanctum');
+Route::get('/groups/{groupId}/members', [\App\Http\Controllers\Api\GroupController::class, 'members'])->whereNumber('groupId')->middleware('auth:sanctum');
+Route::get('/groups/{groupId}/analytics/process-debt', [\App\Http\Controllers\Api\ProcessDebtController::class, 'index'])->whereNumber('groupId')->middleware('auth:sanctum');
 
 
 // User routes

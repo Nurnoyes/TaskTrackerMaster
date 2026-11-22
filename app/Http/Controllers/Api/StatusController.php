@@ -10,12 +10,14 @@ use App\Http\Requests\StatusUpdateRequest;
 use App\Models\Group;
 use App\Models\Status;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class StatusController extends Controller
 {
     public function index($groupId)
     {
-        return Status::all()->where('group_id', $groupId);
+        return Status::all()->where('group_id', $groupId)->values();
     }
 
     public function show($groupId, $statusId) {
@@ -46,8 +48,17 @@ class StatusController extends Controller
     public function update(StatusUpdateRequest $request, $groupid, $statusId)
     {
         $validatedData = $request->validated();
-        $status = Status::findOrFail($statusId);
-        $status->update($validatedData);
-        return $status;
+
+        return DB::transaction(function () use ($validatedData, $statusId) {
+            $status = Status::query()->lockForUpdate()->findOrFail($statusId);
+            if (isset($validatedData['category']) && $validatedData['category'] !== $status->category && $status->tasks()->exists()) {
+                throw ValidationException::withMessages([
+                    'category' => 'Перед сменой категории перенесите задачи в другой статус.',
+                ]);
+            }
+            $status->update($validatedData);
+
+            return $status;
+        });
     }
 }

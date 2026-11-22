@@ -9,7 +9,9 @@ use App\Models\Group;
 use App\Models\Status;
 use App\Models\Task;
 use App\Models\User;
+use App\Services\GroupAccess;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class GroupController extends Controller
 {
@@ -43,7 +45,12 @@ class GroupController extends Controller
     public function store(GroupStoreRequest $request)
     {
         $validatedData = $request->validated();
-        $group = Group::create($validatedData);
+        $group = DB::transaction(function () use ($validatedData, $request) {
+            $group = Group::create($validatedData);
+            $group->users()->attach($request->user()->id);
+
+            return $group;
+        });
         return $group;
     }
 
@@ -53,5 +60,11 @@ class GroupController extends Controller
         $group = Group::findOrFail($groupId);
         $group->update($validatedData);
         return $group;
+    }
+
+    public function members(Request $request, GroupAccess $access, $groupId)
+    {
+        return $access->find($request, $groupId)
+            ->users()->select(['users.id', 'users.name', 'users.email'])->get();
     }
 }
